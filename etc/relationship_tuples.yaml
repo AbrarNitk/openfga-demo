@@ -2,30 +2,30 @@ tuples:
     # Organization memberships
     - user: user:anne
       relation: member
-      object: organisation:contoso
+      object: organisation:system
     - user: user:bob
       relation: member
-      object: organisation:contoso
+      object: organisation:system
     - user: user:carl
       relation: member
-      object: organisation:fabrikam
+      object: organisation:partner
     - user: user:diana
       relation: member
-      object: organisation:fabrikam
+      object: organisation:partner
     - user: user:emily
       relation: member
-      object: organisation:wingtip
+      object: organisation:partner_child
     - user: user:frank
       relation: member
-      object: organisation:wingtip
+      object: organisation:partner_child
 
     # Parent-child organization relationships
-    - user: organisation:fabrikam
+    - user: organisation:partner
       relation: child
-      object: organisation:contoso
-    - user: organisation:wingtip
+      object: organisation:system
+    - user: organisation:partner_child
       relation: child
-      object: organisation:contoso
+      object: organisation:partner
 
     # Group memberships
     - user: user:anne
@@ -39,7 +39,7 @@ tuples:
       object: group:db-admins
 
     # Resource-to-organization relationships
-    - user: organisation:contoso
+    - user: organisation:system
       relation: parent_org
       object: resource:connector/s3/101
 
