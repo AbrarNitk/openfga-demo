@@ -96,20 +96,27 @@ pub async fn check_permission(
 ) -> Result<(StatusCode, Json<Value>), (StatusCode, Json<Value>)> {
     let fga_client = ctx.fga_client.clone();
     
-    // Get store ID and model ID from configuration or database
-    let store_id = "YOUR_STORE_ID";
-    let model_id = "YOUR_MODEL_ID";
+    // Get store ID and model ID from context
+    let store_id = &ctx.fga_config.store_id;
+    let model_id = ctx.fga_config.authorization_model_id.as_ref()
+        .ok_or_else(|| {
+            tracing::error!("Authorization model ID not set");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Authorization model not configured" })),
+            )
+        })?;
     
     // Check if user has permission
     let check_result = fga_client
         .check(openfga_client::api::CheckRequest {
-            store_id: store_id.to_string(),
+            store_id: store_id.clone(),
             tuple_key: Some(openfga_client::api::TupleKey {
                 user: format!("user:{}", params.name),
                 relation: "reader".to_string(),
                 object: format!("document:{}", params.service_name),
             }),
-            authorization_model_id: Some(model_id.to_string()),
+            authorization_model_id: Some(model_id.clone()),
             ..Default::default()
         })
         .await;
@@ -142,14 +149,92 @@ pub async fn check_permission(
 Make sure to set the following environment variables:
 
 ```bash
-# OpenFGA client URL
-export OPENFGA_CLIENT_URL=http://localhost:8080
+# Application profile
+export PROFILE=dev
 
 # Database URL
 export DATABASE_URL=postgres://user:password@localhost:5432/openfga_demo
 
-# Application profile
-export PROFILE=dev
+# OpenFGA configuration
+export OPENFGA_CLIENT_URL=http://localhost:8080
+export OPENFGA_STORE_ID=01HBPC7QTJQPQGCM9MSCG1JM1P
+export OPENFGA_AUTH_MODEL_ID=01HBPC7QTJQPQGCM9MSCG1JM1Q
 ```
 
 You can also create a `.env` file in the project root with these variables.
+
+## Helper Functions for OpenFGA
+
+```rust
+// Helper function to create a store if it doesn't exist
+pub async fn ensure_store_exists(ctx: &Arc<Ctx>) -> Result<String, Box<dyn std::error::Error>> {
+    let fga_client = ctx.fga_client.clone();
+    
+    // Check if store ID is already set
+    if !ctx.fga_config.store_id.is_empty() {
+        return Ok(ctx.fga_config.store_id.clone());
+    }
+    
+    // Create a new store
+    let create_store_response = fga_client
+        .create_store(openfga_client::api::CreateStoreRequest {
+            name: format!("openfga-demo-{}", ctx.profile),
+        })
+        .await?;
+    
+    let store_id = create_store_response.into_inner().id;
+    tracing::info!("Created new OpenFGA store with ID: {}", store_id);
+    
+    Ok(store_id)
+}
+
+// Helper function to create an authorization model if it doesn't exist
+pub async fn ensure_auth_model_exists(
+    ctx: &Arc<Ctx>,
+    store_id: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let fga_client = ctx.fga_client.clone();
+    
+    // Check if model ID is already set
+    if let Some(model_id) = &ctx.fga_config.authorization_model_id {
+        return Ok(model_id.clone());
+    }
+    
+    // Create a new authorization model
+    let authorization_model = r#"{
+      "type_definitions": [
+        {
+          "type": "user",
+          "relations": {}
+        },
+        {
+          "type": "resource",
+          "relations": {
+            "reader": {
+              "this": {}
+            },
+            "writer": {
+              "this": {}
+            },
+            "owner": {
+              "this": {}
+            }
+          }
+        }
+      ]
+    }"#;
+    
+    let write_model_response = fga_client
+        .write_authorization_model(openfga_client::api::WriteAuthorizationModelRequest {
+            store_id: store_id.to_string(),
+            type_definitions: serde_json::from_str(authorization_model).unwrap(),
+            schema_version: "1.1".to_string(),
+        })
+        .await?;
+    
+    let model_id = write_model_response.into_inner().authorization_model_id;
+    tracing::info!("Created new OpenFGA authorization model with ID: {}", model_id);
+    
+    Ok(model_id)
+}
+```

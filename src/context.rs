@@ -6,6 +6,15 @@ use std::sync::Arc;
 use std::time::Duration;
 use tonic::transport::Channel;
 
+/// OpenFGA configuration parameters
+#[derive(Clone, Debug)]
+pub struct OpenFgaConfig {
+    /// OpenFGA store ID
+    pub store_id: String,
+    /// OpenFGA authorization model ID
+    pub authorization_model_id: Option<String>,
+}
+
 /// Application context that holds shared resources
 #[derive(Clone)]
 pub struct Ctx {
@@ -15,6 +24,8 @@ pub struct Ctx {
     pub profile: String,
     /// OpenFGA client
     pub fga_client: OpenFgaServiceClient<Channel>,
+    /// OpenFGA configuration
+    pub fga_config: OpenFgaConfig,
 }
 
 impl Ctx {
@@ -33,10 +44,23 @@ impl Ctx {
         // Initialize OpenFGA client
         let fga_client = init_fga_client().await?;
 
+        // Get OpenFGA configuration
+        let fga_config = get_fga_config();
+
+        // Log OpenFGA configuration
+        if !fga_config.store_id.is_empty() {
+            tracing::info!("Using OpenFGA store ID: {}", fga_config.store_id);
+        }
+
+        if let Some(model_id) = &fga_config.authorization_model_id {
+            tracing::info!("Using OpenFGA authorization model ID: {}", model_id);
+        }
+
         Ok(Arc::new(Self {
             db,
             profile,
             fga_client,
+            fga_config,
         }))
     }
 }
@@ -71,4 +95,30 @@ async fn init_fga_client() -> Result<OpenFgaServiceClient<Channel>, Box<dyn std:
     tracing::info!("OpenFGA client initialized successfully");
 
     Ok(client)
+}
+
+/// Get OpenFGA configuration from environment variables
+fn get_fga_config() -> OpenFgaConfig {
+    // Get OpenFGA store ID from environment, default to empty string which will need to be set later
+    let store_id = env::var("OPENFGA_STORE_ID").unwrap_or_else(|_| {
+        tracing::warn!("OPENFGA_STORE_ID not set, using empty string");
+        String::new()
+    });
+
+    // Get OpenFGA authorization model ID from environment, optional
+    let authorization_model_id = match env::var("OPENFGA_AUTH_MODEL_ID") {
+        Ok(id) => {
+            tracing::info!("Using OpenFGA authorization model ID: {}", id);
+            Some(id)
+        }
+        Err(_) => {
+            tracing::info!("OPENFGA_AUTH_MODEL_ID not set, will need to be set later");
+            None
+        }
+    };
+
+    OpenFgaConfig {
+        store_id,
+        authorization_model_id,
+    }
 }
