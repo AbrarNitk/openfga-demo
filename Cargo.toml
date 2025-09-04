@@ -13,3 +13,5 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 sqlx = { version = "0.7.3", features = ["runtime-tokio", "postgres", "macros", "time", "uuid"] }
 dotenv = "0.15.0"
+openfga-client = "0.3.0"
+tonic = "0.12"
