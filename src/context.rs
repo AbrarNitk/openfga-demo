@@ -87,7 +87,7 @@ async fn pg_pool() -> Result<PgPool, Box<dyn std::error::Error>> {
 async fn init_fga_client() -> Result<OpenFgaServiceClient<Channel>, Box<dyn std::error::Error>> {
     // Get OpenFGA client URL from environment, default to localhost
     let fga_url =
-        env::var("OPENFGA_CLIENT_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
+        env::var("OPENFGA_CLIENT_URL").unwrap_or_else(|_| "http://localhost:8081".to_string());
     tracing::info!("Connecting to OpenFGA at {}", fga_url);
 
     // Create OpenFGA client without authentication

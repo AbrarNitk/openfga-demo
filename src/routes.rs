@@ -1,8 +1,10 @@
+use crate::auth;
 use crate::context::Ctx;
 use crate::controller;
 use axum::{
     Json, Router,
     http::StatusCode,
+    middleware,
     routing::{get, post},
 };
 use serde_json::{Value, json};
@@ -10,9 +12,8 @@ use std::sync::Arc;
 
 /// Create all routes for the application
 pub fn create_routes<S: Send + Sync>(ctx: Arc<Ctx>) -> Router<S> {
-    Router::new()
-        .route("/health", get(health_check))
-        .route("/", get(root))
+    // Create protected routes that require authentication
+    let protected_routes = Router::new()
         .route(
             "/api/resource/{service_name}/{service_type}/{org_id}/{name}",
             post(controller::create_resource)
@@ -20,7 +21,18 @@ pub fn create_routes<S: Send + Sync>(ctx: Arc<Ctx>) -> Router<S> {
                 .get(controller::get_resource)
                 .delete(controller::delete_resource),
         )
-        .with_state(ctx)
+        .route_layer(middleware::from_fn_with_state(
+            ctx.clone(),
+            auth::auth_middleware,
+        ));
+
+    // Create public routes that don't require authentication
+    let public_routes = Router::new()
+        .route("/health", get(health_check))
+        .route("/", get(root));
+
+    // Merge all routes
+    public_routes.merge(protected_routes).with_state(ctx)
 }
 
 /// Health check endpoint

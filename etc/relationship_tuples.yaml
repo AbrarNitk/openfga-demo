@@ -6,6 +6,9 @@ tuples:
     - user: user:bob
       relation: member
       object: organisation:system
+    - user: user:alice
+      relation: member
+      object: organisation:system
     - user: user:carl
       relation: member
       object: organisation:partner
@@ -30,10 +33,10 @@ tuples:
     # Group memberships
     - user: user:anne
       relation: member
-      object: group:auditors
+      object: group:editors
     - user: user:emily
       relation: member
-      object: group:auditors
+      object: group:editors
     - user: user:bob
       relation: member
       object: group:db-admins
@@ -53,3 +56,8 @@ tuples:
     - user: user:diana
       relation: editor
       object: resource:connector/gcs/401
+
+    # Alice as admin on a new document
+    - user: user:alice
+      relation: admin
+      object: resource:connector/document/601

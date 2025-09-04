@@ -1,5 +1,7 @@
+use crate::auth::AuthUser;
 use crate::context::Ctx;
 use axum::{
+    Extension,
     extract::{Json, Path, State},
     http::StatusCode,
 };
@@ -87,8 +89,21 @@ async fn check_permission(
             Ok(allowed)
         }
         Err(e) => {
-            tracing::error!("Error checking permission: {}", e);
-            Err(e.into())
+            tracing::error!("Error checking permission with OpenFGA: {}", e);
+
+            // Check if it's a transport error (connection issue)
+            let error_msg = e.to_string();
+            if error_msg.contains("transport error") || error_msg.contains("Connection refused") {
+                tracing::error!("OpenFGA server appears to be unavailable. Please check:");
+                tracing::error!("1. OpenFGA server is running");
+                tracing::error!(
+                    "2. OPENFGA_CLIENT_URL is correct (default: http://localhost:8081)"
+                );
+                tracing::error!("3. Network connectivity to OpenFGA server");
+                return Err("OpenFGA server is not available. Please check server status and configuration.".into());
+            }
+
+            Err(format!("OpenFGA permission check failed: {}", e).into())
         }
     }
 }
@@ -96,6 +111,7 @@ async fn check_permission(
 // Create a new resource
 pub async fn create_resource(
     State(ctx): State<Arc<Ctx>>,
+    Extension(auth_user): Extension<AuthUser>,
     Path(params): Path<ResourceParams>,
     Json(_payload): Json<Value>,
 ) -> Result<(StatusCode, Json<Value>), (StatusCode, Json<Value>)> {
@@ -112,9 +128,8 @@ pub async fn create_resource(
         params.service_name, params.service_type, params.org_id, params.name
     );
 
-    // For this example, we'll use a hardcoded user ID
-    // In a real application, this would come from authentication
-    let user_id = "current-user";
+    // Get user ID from authentication middleware
+    let user_id = &auth_user.user_id;
 
     // To create a resource, user needs to be an admin of the organization
     // In a real app, we would check if the user is an admin of the organization
@@ -168,6 +183,7 @@ pub async fn create_resource(
 // Update an existing resource
 pub async fn update_resource(
     State(ctx): State<Arc<Ctx>>,
+    Extension(auth_user): Extension<AuthUser>,
     Path(params): Path<ResourceParams>,
     Json(_payload): Json<Value>,
 ) -> Result<(StatusCode, Json<Value>), (StatusCode, Json<Value>)> {
@@ -184,9 +200,8 @@ pub async fn update_resource(
         params.service_name, params.service_type, params.org_id, params.name
     );
 
-    // For this example, we'll use a hardcoded user ID
-    // In a real application, this would come from authentication
-    let user_id = "current-user";
+    // Get user ID from authentication middleware
+    let user_id = &auth_user.user_id;
 
     // To update a resource, user needs to be an editor of the resource
     match check_permission(&ctx, user_id, "editor", &resource_key).await {
@@ -238,6 +253,7 @@ pub async fn update_resource(
 // Get a resource
 pub async fn get_resource(
     State(ctx): State<Arc<Ctx>>,
+    Extension(auth_user): Extension<AuthUser>,
     Path(params): Path<ResourceParams>,
 ) -> Result<(StatusCode, Json<Value>), (StatusCode, Json<Value>)> {
     tracing::info!(
@@ -253,9 +269,8 @@ pub async fn get_resource(
         params.service_name, params.service_type, params.org_id, params.name
     );
 
-    // For this example, we'll use a hardcoded user ID
-    // In a real application, this would come from authentication
-    let user_id = "current-user";
+    // Get user ID from authentication middleware
+    let user_id = &auth_user.user_id;
 
     // Check if user has viewer permission on the resource
     match check_permission(&ctx, user_id, "viewer", &resource_key).await {
@@ -308,6 +323,7 @@ pub async fn get_resource(
 // Delete a resource
 pub async fn delete_resource(
     State(ctx): State<Arc<Ctx>>,
+    Extension(auth_user): Extension<AuthUser>,
     Path(params): Path<ResourceParams>,
 ) -> Result<(StatusCode, Json<Value>), (StatusCode, Json<Value>)> {
     tracing::info!(
@@ -323,9 +339,8 @@ pub async fn delete_resource(
         params.service_name, params.service_type, params.org_id, params.name
     );
 
-    // For this example, we'll use a hardcoded user ID
-    // In a real application, this would come from authentication
-    let user_id = "current-user";
+    // Get user ID from authentication middleware
+    let user_id = &auth_user.user_id;
 
     // To delete a resource, user needs to be an owner of the resource
     match check_permission(&ctx, user_id, "owner", &resource_key).await {
