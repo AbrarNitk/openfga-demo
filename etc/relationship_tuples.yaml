@@ -1,0 +1,55 @@
+tuples:
+    # Organization memberships
+    - user: user:anne
+      relation: member
+      object: organisation:contoso
+    - user: user:bob
+      relation: member
+      object: organisation:contoso
+    - user: user:carl
+      relation: member
+      object: organisation:fabrikam
+    - user: user:diana
+      relation: member
+      object: organisation:fabrikam
+    - user: user:emily
+      relation: member
+      object: organisation:wingtip
+    - user: user:frank
+      relation: member
+      object: organisation:wingtip
+
+    # Parent-child organization relationships
+    - user: organisation:fabrikam
+      relation: child
+      object: organisation:contoso
+    - user: organisation:wingtip
+      relation: child
+      object: organisation:contoso
+
+    # Group memberships
+    - user: user:anne
+      relation: member
+      object: group:auditors
+    - user: user:emily
+      relation: member
+      object: group:auditors
+    - user: user:bob
+      relation: member
+      object: group:db-admins
+
+    # Resource-to-organization relationships
+    - user: organisation:contoso
+      relation: parent_org
+      object: resource:connector/s3/101
+
+    # Resource permissions
+    - user: user:bob
+      relation: owner
+      object: resource:connector/mysql/301
+    - user: group:db-admins#member
+      relation: admin
+      object: resource:connector/mysql/301
+    - user: user:diana
+      relation: editor
+      object: resource:connector/gcs/401
