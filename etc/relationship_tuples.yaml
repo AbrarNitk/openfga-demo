@@ -40,11 +40,96 @@ tuples:
     - user: user:bob
       relation: member
       object: group:admin
+    - user: user:carl
+      relation: member
+      object: group:partner_share
+    - user: user:diana
+      relation: member
+      object: group:partner_share
+    - user: user:emily
+      relation: member
+      object: group:child_share
+    - user: user:frank
+      relation: member
+      object: group:child_share
 
-    # Resource-to-organization relationships
+    # Service definitions and relationships
+    - user: organisation:system
+      relation: parent_org
+      object: service:connector
+    - user: organisation:partner
+      relation: parent_org
+      object: service:analytics
+    - user: organisation:partner_child
+      relation: parent_org
+      object: service:reporting
+
+    # Service type definitions and relationships
+    - user: service:connector
+      relation: parent_service
+      object: service_type:connector/s3
+    - user: service:connector
+      relation: parent_service
+      object: service_type:connector/mysql
+    - user: service:connector
+      relation: parent_service
+      object: service_type:connector/gcs
+    - user: service:connector
+      relation: parent_service
+      object: service_type:connector/document
+    - user: organisation:system
+      relation: parent_org
+      object: service_type:connector/s3
+    - user: organisation:system
+      relation: parent_org
+      object: service_type:connector/mysql
+    - user: organisation:system
+      relation: parent_org
+      object: service_type:connector/gcs
+    - user: organisation:system
+      relation: parent_org
+      object: service_type:connector/document
+
+    # Resource relationships to services, service types, and organizations
+    - user: service_type:connector/s3
+      relation: parent_service_type
+      object: resource:connector/s3/101
+    - user: service:connector
+      relation: parent_service
+      object: resource:connector/s3/101
     - user: organisation:system
       relation: parent_org
       object: resource:connector/s3/101
+
+    - user: service_type:connector/mysql
+      relation: parent_service_type
+      object: resource:connector/mysql/301
+    - user: service:connector
+      relation: parent_service
+      object: resource:connector/mysql/301
+    - user: organisation:system
+      relation: parent_org
+      object: resource:connector/mysql/301
+
+    - user: service_type:connector/gcs
+      relation: parent_service_type
+      object: resource:connector/gcs/401
+    - user: service:connector
+      relation: parent_service
+      object: resource:connector/gcs/401
+    - user: organisation:system
+      relation: parent_org
+      object: resource:connector/gcs/401
+
+    - user: service_type:connector/document
+      relation: parent_service_type
+      object: resource:connector/document/601
+    - user: service:connector
+      relation: parent_service
+      object: resource:connector/document/601
+    - user: organisation:system
+      relation: parent_org
+      object: resource:connector/document/601
 
     # Resource permissions
     - user: user:bob
@@ -56,8 +141,22 @@ tuples:
     - user: user:diana
       relation: editor
       object: resource:connector/gcs/401
-
-    # Alice as admin on a new document
     - user: user:alice
       relation: admin
+      object: resource:connector/document/601
+
+    # SHARING EXAMPLES:
+    # 1. Full service sharing: Share entire "connector" service from system org to partner org via group
+    - user: group:partner_share#member
+      relation: shared_to_child_orgs
+      object: service:connector
+
+    # 2. Service-type sharing: Share only "s3" service-type from system org to partner_child org via group
+    - user: group:child_share#member
+      relation: shared_to_child_orgs
+      object: service_type:connector/s3
+
+    # 3. Individual resource sharing: Share specific document resource to partner org via group
+    - user: group:partner_share#member
+      relation: shared_to_child_orgs
       object: resource:connector/document/601

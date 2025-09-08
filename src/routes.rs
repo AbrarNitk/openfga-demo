@@ -21,6 +21,11 @@ pub fn create_routes<S: Send + Sync>(ctx: Arc<Ctx>) -> Router<S> {
                 .get(controller::get_resource)
                 .delete(controller::delete_resource),
         )
+        .route("/api/list-objects", get(controller::list_objects))
+        .route(
+            "/api/shared-resources",
+            get(controller::get_shared_resources),
+        )
         .route_layer(middleware::from_fn_with_state(
             ctx.clone(),
             auth::auth_middleware,
