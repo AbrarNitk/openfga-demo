@@ -33,13 +33,14 @@ async fn check_permission(
     ctx: &Arc<Ctx>,
     user_id: &str,
     relation: &str,
-    resource_id: &str,
+    object_id: &str,
 ) -> Result<bool, Box<dyn std::error::Error>> {
+
     tracing::info!(
         "Checking if user {} has {} permission on resource {}",
         user_id,
         relation,
-        resource_id
+        object_id
     );
 
     // Get store ID from context
@@ -61,7 +62,7 @@ async fn check_permission(
     let tuple_key = TupleKeyWithoutCondition {
         user: format!("user:{}", user_id),
         relation: relation.to_string(),
-        object: format!("resource:{}", resource_id),
+        object: object_id.to_string(),
     };
 
     // Create a check request using tonic::Request
@@ -83,7 +84,7 @@ async fn check_permission(
             tracing::info!(
                 "Permission check result for user {} on resource {}: {}",
                 user_id,
-                resource_id,
+                object_id,
                 allowed
             );
             Ok(allowed)
@@ -123,9 +124,14 @@ pub async fn create_resource(
         params.name
     );
 
-    let resource_key = format!(
-        "{}/{}/{}/{}",
-        params.service_name, params.service_type, params.org_id, params.name
+    // let resource_key = format!(
+    //     "{}/{}/{}/{}",
+    //     params.service_name, params.service_type, params.org_id, params.name
+    // );
+
+    let org_key = format!(
+        "organisation:{}",
+        params.org_id
     );
 
     // Get user ID from authentication middleware
@@ -134,13 +140,13 @@ pub async fn create_resource(
     // To create a resource, user needs to be an admin of the organization
     // In a real app, we would check if the user is an admin of the organization
     // For this example, we'll check if the user has admin permission on the resource
-    match check_permission(&ctx, user_id, "admin", &resource_key).await {
+    match check_permission(&ctx, user_id, "admin", &org_key).await {
         Ok(allowed) => {
             if !allowed {
                 tracing::warn!(
                     "User {} does not have admin permission for resource {}",
                     user_id,
-                    resource_key
+                    org_key
                 );
                 return Err((
                     StatusCode::FORBIDDEN,
@@ -152,9 +158,9 @@ pub async fn create_resource(
             }
 
             tracing::info!(
-                "User {} has admin permission for resource {}",
+                "User {} has admin permission for organisation {}",
                 user_id,
-                resource_key
+                org_key
             );
 
             // In a real app, we would create the resource in the database
@@ -163,7 +169,7 @@ pub async fn create_resource(
                 StatusCode::CREATED,
                 Json(json!({
                     "message": "Resource created successfully",
-                    "resource_id": resource_key
+                    "organisation": params.org_id
                 })),
             ))
         }

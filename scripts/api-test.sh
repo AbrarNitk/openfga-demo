@@ -15,7 +15,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
-DEFAULT_SERVICE_NAME="my-service"
+DEFAULT_SERVICE_NAME="connector"
 DEFAULT_SERVICE_TYPE="web"
 DEFAULT_ORG_ID="org-1"
 DEFAULT_RESOURCE_NAME="my-resource"

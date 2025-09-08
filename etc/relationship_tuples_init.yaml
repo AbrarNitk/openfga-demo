@@ -1,26 +1,11 @@
 tuples:
     # Organization memberships
-    - user: user:anne
+    - user: user:abrar
       relation: member
       object: organisation:system
-    - user: user:bob
-      relation: member
+    - user: user:abrar
+      relation: admin
       object: organisation:system
-    - user: user:alice
-      relation: member
-      object: organisation:system
-    - user: user:carl
-      relation: member
-      object: organisation:partner
-    - user: user:diana
-      relation: member
-      object: organisation:partner
-    - user: user:emily
-      relation: member
-      object: organisation:partner_child
-    - user: user:frank
-      relation: member
-      object: organisation:partner_child
 
     # Parent-child organization relationships
     - user: organisation:partner
